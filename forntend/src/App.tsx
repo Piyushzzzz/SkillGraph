@@ -190,22 +190,16 @@ export function App() {
         api.getInsightsStatus().catch(() => null)
       ]);
 
-      const isDemo = fetchedProfile?.id === '1' || fetchedProfile?.email === 'alex.mercer@university.edu';
+      const currentUserId = api.getActiveUserId();
+      const isDemoUser = String(currentUserId) === '1' || fetchedProfile?.email === 'alex.mercer@university.edu';
 
-      if (fetchedProfile) {
-        setProfile(fetchedProfile);
-        if (isDemo) {
-          setEvidenceItems(fetchedEvidence && fetchedEvidence.length > 0 ? fetchedEvidence : initialEvidence);
-          setSkillNodes(fetchedSkills?.nodes && fetchedSkills.nodes.length > 0 ? fetchedSkills.nodes : initialSkillNodes);
-        } else {
-          // Fresh user: absolute zero until explicit evidence is added
-          setEvidenceItems(Array.isArray(fetchedEvidence) ? fetchedEvidence : []);
-          setSkillNodes(fetchedSkills?.nodes && fetchedSkills.nodes.length > 0 ? fetchedSkills.nodes : []);
-        }
+      setProfile(fetchedProfile || (isDemoUser ? initialProfile : null));
+      if (isDemoUser) {
+        setEvidenceItems(fetchedEvidence && fetchedEvidence.length > 0 ? fetchedEvidence : initialEvidence);
+        setSkillNodes(fetchedSkills?.nodes && fetchedSkills.nodes.length > 0 ? fetchedSkills.nodes : initialSkillNodes);
       } else {
-        setProfile(initialProfile);
-        setEvidenceItems(initialEvidence);
-        setSkillNodes(initialSkillNodes);
+        setEvidenceItems(Array.isArray(fetchedEvidence) ? fetchedEvidence : []);
+        setSkillNodes(fetchedSkills?.nodes && fetchedSkills.nodes.length > 0 ? fetchedSkills.nodes : []);
       }
       
       const roles = fetchedRoles && fetchedRoles.length > 0 ? fetchedRoles : targetRolesList;
@@ -244,7 +238,7 @@ export function App() {
 
   // Auth Handlers
   const handleLoginSuccess = async (email: string) => {
-    if (email.toLowerCase().includes('alex')) {
+    if (email === 'alex.mercer@university.edu' || email === 'alex@stanford.edu') {
       api.setActiveUserId(1);
     }
     await loadBackendData();
@@ -254,44 +248,68 @@ export function App() {
   const handleSignupSuccess = async (newProfile: Partial<StudentProfile>) => {
     try {
       const res = await api.createStudentProfile({
-        name: newProfile.fullName || 'New Student',
-        email: newProfile.email || '',
-        university: newProfile.university?.trim() || undefined,
-        branch: newProfile.major?.trim() || undefined,
-        semester: undefined,
-        cgpa: undefined
+        name: newProfile.fullName || 'Student Candidate',
+        email: newProfile.email || `student_${Date.now()}@university.edu`,
+        university: newProfile.university,
+        degree: newProfile.degree,
+        branch: newProfile.major,
+        cgpa: newProfile.cgpa
       });
-      if (res.data?.id) {
+      if (res?.data?.id) {
         api.setActiveUserId(res.data.id);
       }
-    } catch (err) {
-      console.warn('Signup registration:', err);
+    } catch (e) {
+      console.warn('Backend signup error:', e);
     }
     await loadBackendData();
-    showToast('Account Created', 'Welcome to SkillGraph! Your clean slate is ready.', 'success');
+    showToast('Account Created', 'Welcome to SkillGraph! Complete your profile to build your graph.', 'success');
   };
 
   const handleAddEvidence = async (item: EvidenceItem) => {
     setEvidenceItems((prev) => [item, ...prev]);
+    try {
+      await api.createEvidence(item);
+      const updatedSkills = await api.getSkillsGraph();
+      if (updatedSkills?.nodes) {
+        setSkillNodes(updatedSkills.nodes);
+      }
+    } catch (e) {
+      console.warn('Failed to persist evidence to backend:', e);
+    }
     showToast('Evidence Recorded', `Deposited "${item.title}" into evidence vault.`, 'success');
   };
 
   const handleDeleteEvidence = async (id: string) => {
     setEvidenceItems((prev) => prev.filter((item) => item.id !== id));
+    try {
+      await api.deleteEvidence(id);
+      const updatedSkills = await api.getSkillsGraph();
+      if (updatedSkills?.nodes) {
+        setSkillNodes(updatedSkills.nodes);
+      }
+    } catch (e) {
+      console.warn('Failed to delete evidence on backend:', e);
+    }
     showToast('Evidence Removed', 'Record removed from ledger.', 'info');
   };
 
-  const handleUpdateProfile = (updated: Partial<StudentProfile>) => {
+  const handleUpdateProfile = async (updated: Partial<StudentProfile>) => {
     setProfile((prev) => ({
-      ...(prev || { id: 'usr_me' }),
+      ...(prev || { id: 'usr_me', fullName: 'Student Candidate', email: '' }),
       ...updated
     }));
+    try {
+      await api.updateProfile(updated);
+    } catch (e) {
+      console.warn('Failed to update profile on backend:', e);
+    }
+    showToast('Profile Saved', 'Profile information updated successfully.', 'success');
   };
 
   // Render Route 1: Landing Page (Root '/')
   if (currentRoute === '/') {
     return (
-      <div className="min-h-screen bg-white text-[#0F172A] font-sans selection:bg-slate-200 selection:text-[#0F172A]">
+      <div className="min-h-screen bg-[#f8fafc] text-[#0f172a] font-sans selection:bg-blue-100 selection:text-blue-900">
         <LandingPage onNavigate={navigateTo} />
         <Toast toasts={toasts} onDismiss={handleDismissToast} />
       </div>
@@ -301,7 +319,7 @@ export function App() {
   // Render Route 2: Login Page ('/login')
   if (currentRoute === '/login') {
     return (
-      <div className="min-h-screen bg-[#F8FAFC] text-[#0F172A] font-sans selection:bg-slate-200 selection:text-[#0F172A]">
+      <div className="min-h-screen bg-[#f8fafc] text-[#0f172a] font-sans selection:bg-blue-100 selection:text-blue-900">
         <LoginPage onNavigate={navigateTo} onLoginSuccess={handleLoginSuccess} />
         <Toast toasts={toasts} onDismiss={handleDismissToast} />
       </div>
@@ -311,7 +329,7 @@ export function App() {
   // Render Route 3: Signup Page ('/signup')
   if (currentRoute === '/signup') {
     return (
-      <div className="min-h-screen bg-[#F8FAFC] text-[#0F172A] font-sans selection:bg-slate-200 selection:text-[#0F172A]">
+      <div className="min-h-screen bg-[#f8fafc] text-[#0f172a] font-sans selection:bg-blue-100 selection:text-blue-900">
         <SignupPage onNavigate={navigateTo} onSignupSuccess={handleSignupSuccess} />
         <Toast toasts={toasts} onDismiss={handleDismissToast} />
       </div>
@@ -321,7 +339,7 @@ export function App() {
   // Fallback for Loading or Error when loading authenticated views
   if (isLoading && !profile) {
     return (
-      <div className="min-h-screen bg-[#F8FAFC] text-[#0F172A] flex items-center justify-center p-6">
+      <div className="min-h-screen bg-[#f8fafc] text-[#0f172a] flex items-center justify-center p-6">
         <LoadingState message="Loading your verified SkillGraph data..." />
       </div>
     );
@@ -329,7 +347,7 @@ export function App() {
 
   if (loadError && !profile) {
     return (
-      <div className="min-h-screen bg-[#F8FAFC] text-[#0F172A] flex items-center justify-center p-6">
+      <div className="min-h-screen bg-[#f8fafc] text-[#0f172a] flex items-center justify-center p-6">
         <ErrorState message={loadError} onRetry={loadBackendData} />
       </div>
     );
@@ -345,8 +363,8 @@ export function App() {
 
   // Render Authenticated App Layout (Routes: /dashboard, /evidence, /skills, /roles, /gap-analysis, /mission, /profile, /integrations, /architecture)
   return (
-    <div className="min-h-screen bg-[#F8FAFC] text-[#0F172A] flex flex-col font-sans selection:bg-slate-200 selection:text-[#0F172A]">
-      {/* Top Fixed Header */}
+    <div className="min-h-screen bg-[#f8fafc] text-[#0f172a] flex flex-col font-sans selection:bg-blue-100 selection:text-blue-900">
+      {/* Unified Top Navigation */}
       <NavigationHeader
         currentView={currentRoute as ViewPath}
         onNavigate={navigateTo}
@@ -355,21 +373,12 @@ export function App() {
         insightsStatus={insightsStatus}
         onSelectRole={setActiveRoleId}
         onOpenLedger={() => setIsLedgerOpen(true)}
+        onOpenAddProject={() => setIsAddProjectOpen(true)}
         profile={activeStudentProfile}
       />
 
-      {/* Main Container: Sidebar + Content */}
-      <div className="flex flex-1 overflow-hidden">
-        <Sidebar
-          currentView={currentRoute}
-          onNavigate={navigateTo}
-          onOpenAddProject={() => setIsAddProjectOpen(true)}
-          onOpenAddHackathon={() => setIsAddHackathonOpen(true)}
-          evidenceCount={evidenceItems.length}
-        />
-
-        {/* Scrollable View Content */}
-        <main className="flex-1 overflow-y-auto min-h-[calc(100vh-4rem)]">
+      {/* Main Single Page Content - Spacious and clean */}
+      <main className="flex-1 overflow-y-auto">
           {currentRoute === '/dashboard' && (
             <OverviewDashboard
               profile={activeStudentProfile}
@@ -458,7 +467,6 @@ export function App() {
             <ArchitectureDocsView onShowToast={showToast} />
           )}
         </main>
-      </div>
 
       {/* Global Modals */}
       <ProofAuditModal
