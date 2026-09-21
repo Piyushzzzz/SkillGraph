@@ -1,0 +1,67 @@
+# Environments & Virtualenvs
+.venv/
+*/.venv/
+venv/
+*/venv/
+env/
+*/env/
+ENV/
+env.bak/
+venv.bak/
+
+# Node & Frontend Build
+node_modules/
+*/node_modules/
+dist/
+*/dist/
+dist-ssr/
+*.local
+.npm
+.eslintcache
+
+# Python Caches & Bytecode
+__pycache__/
+*/__pycache__/
+*/*/__pycache__/
+*/*/*/__pycache__/
+*.py[cod]
+*$py.class
+*.pyc
+.pytest_cache/
+*/.pytest_cache/
+.coverage
+htmlcov/
+.mypy_cache/
+.ruff_cache/
+
+# Databases & Runtime State
+*.db
+*.sqlite
+*.sqlite3
+skillgraph.db
+*/skillgraph.db
+
+# Secrets & Local Environments
+.env
+*/.env
+!.env.example
+!*/.env.example
+
+# Logs & OS artifacts
+*.log
+*/logs/
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+.DS_Store
+Thumbs.db
+desktop.ini
+
+# IDE & Editor files
+.vscode/
+.idea/
+*.suo
+*.ntvs*
+*.njsproj
+*.sln
+*.sw?

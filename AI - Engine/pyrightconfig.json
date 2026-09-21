@@ -1,0 +1,18 @@
+{
+  "include": [
+    ".",
+    "ai-engine",
+    "ai_engine",
+    "services",
+    "insights",
+    "tests"
+  ],
+  "extraPaths": [
+    ".",
+    "ai-engine",
+    "services",
+    "insights"
+  ],
+  "pythonVersion": "3.13",
+  "reportMissingImports": false
+}

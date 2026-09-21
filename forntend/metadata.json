@@ -1,0 +1,6 @@
+{
+  "name": "SkillGraph",
+  "description": "Evidence-backed skill verification, interactive talent graph, and career gap analysis for software engineers.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}

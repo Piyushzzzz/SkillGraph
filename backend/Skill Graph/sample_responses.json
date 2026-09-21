@@ -1,0 +1,164 @@
+{
+  "GET_api_profile": {
+    "success": true,
+    "data": {
+      "name": "Alex Mercer",
+      "email": "alex.mercer@university.edu",
+      "university": "Tech State University",
+      "degree": "Bachelor of Technology",
+      "branch": "Computer Science & Engineering",
+      "semester": 6,
+      "cgpa": 8.75,
+      "id": 1,
+      "created_at": "2026-09-21T18:00:00Z",
+      "updated_at": "2026-09-21T18:00:00Z"
+    },
+    "message": "Profile retrieved successfully."
+  },
+  "GET_api_academic": {
+    "success": true,
+    "data": {
+      "user_id": 1,
+      "cgpa": 8.75,
+      "semester": 6,
+      "total_credits": 15.0,
+      "subjects": [
+        {
+          "name": "Data Structures & Algorithms",
+          "grade": "A+",
+          "credits": 4.0,
+          "id": 1,
+          "user_id": 1
+        },
+        {
+          "name": "Database Management Systems",
+          "grade": "A",
+          "credits": 4.0,
+          "id": 2,
+          "user_id": 1
+        }
+      ]
+    },
+    "message": "Academic summary retrieved successfully."
+  },
+  "GET_api_evidence": {
+    "success": true,
+    "data": [
+      {
+        "id": 1,
+        "user_id": 1,
+        "type": "project",
+        "title": "Microservices REST Engine",
+        "description": "Engineered modular REST microservices with automated testing and relational persistence.",
+        "source_url": "https://github.com/alexmercer/microservices-engine",
+        "date": "2026-03-15",
+        "verification_status": "verified",
+        "created_at": "2026-09-21T18:00:00Z",
+        "skills": [
+          {
+            "skill_id": "python",
+            "skill_name": "Python",
+            "confidence": 0.95,
+            "reason": "Core project stack"
+          },
+          {
+            "skill_id": "fastapi",
+            "skill_name": "FastAPI",
+            "confidence": 0.95,
+            "reason": "Core project stack"
+          }
+        ],
+        "details": {
+          "id": 1,
+          "project_name": "Microservices REST Engine",
+          "role": "Lead Backend Engineer",
+          "contribution": "Implemented database models, schema migrations, and REST endpoints.",
+          "technologies": ["Python", "FastAPI", "SQL", "PostgreSQL", "REST API"],
+          "github_url": "https://github.com/alexmercer/microservices-engine",
+          "demo_url": "https://api.demo.microservices.io"
+        }
+      }
+    ],
+    "message": "Retrieved 1 evidence items."
+  },
+  "GET_api_skills_graph": {
+    "success": true,
+    "data": {
+      "nodes": [
+        {
+          "id": "python",
+          "label": "Python",
+          "category": "programming",
+          "evidence_count": 3
+        },
+        {
+          "id": "fastapi",
+          "label": "FastAPI",
+          "category": "framework",
+          "evidence_count": 2
+        },
+        {
+          "id": "docker",
+          "label": "Docker",
+          "category": "devops",
+          "evidence_count": 1
+        }
+      ],
+      "edges": [
+        {
+          "source": "python",
+          "target": "fastapi",
+          "relationship": "used_with"
+        },
+        {
+          "source": "git",
+          "target": "docker",
+          "relationship": "toolchain"
+        }
+      ]
+    },
+    "message": "React Flow skill graph retrieved successfully."
+  },
+  "GET_api_gap_analysis_backend_developer": {
+    "success": true,
+    "data": {
+      "role": "Backend Developer",
+      "strong": [
+        "Python",
+        "SQL"
+      ],
+      "developing": [
+        "Docker"
+      ],
+      "missing": [
+        "Testing",
+        "Cloud"
+      ]
+    },
+    "message": "Gap analysis for 'Backend Developer' completed successfully."
+  },
+  "POST_api_mission_generate": {
+    "success": true,
+    "data": {
+      "id": 1,
+      "user_id": 1,
+      "role_id": "backend-developer",
+      "title": "Bridge Skill Gap: Testing, Cloud for Backend Developer",
+      "description": "Hands-on mission designed to upgrade your capabilities in Testing, Cloud. Successfully executing this mission will generate verifiable evidence for the Backend Developer career path.",
+      "requirements": [
+        "Implement a real-world repository or microservice demonstrating hands-on mastery of Testing, Cloud.",
+        "Include automated unit or integration tests with >80% code coverage.",
+        "Add a comprehensive README.md detailing architectural decisions and deployment instructions.",
+        "Deploy the project to a public cloud provider or Docker container demo."
+      ],
+      "expected_evidence": [
+        "Public GitHub repository with Testing, Cloud implementation",
+        "CI/CD test run badge or coverage report",
+        "Working live demo URL or architectural walkthrough video"
+      ],
+      "status": "pending",
+      "created_at": "2026-09-21T18:00:00Z"
+    },
+    "message": "Mission generated successfully."
+  }
+}
