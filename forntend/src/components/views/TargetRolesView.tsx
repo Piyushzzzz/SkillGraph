@@ -41,8 +41,9 @@ export const TargetRolesView: React.FC<TargetRolesViewProps> = ({
   }
 
   const activeRole = targetRoles.find((r) => r.id === activeRoleId) || targetRoles[0];
-  const metCount = activeRole.requiredStack.filter((s) => s.status === 'met').length;
-  const totalCount = activeRole.requiredStack.length;
+  const activeStack = activeRole?.requiredStack || [];
+  const metCount = activeStack.filter((s) => s.status === 'met').length;
+  const totalCount = activeStack.length || 1;
   const percentage = Math.round((metCount / totalCount) * 100);
 
   return (
@@ -61,8 +62,9 @@ export const TargetRolesView: React.FC<TargetRolesViewProps> = ({
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
         {targetRoles.map((role) => {
           const isSelected = role.id === activeRole.id;
-          const roleMet = role.requiredStack.filter((s) => s.status === 'met').length;
-          const rolePct = Math.round((roleMet / role.requiredStack.length) * 100);
+          const roleStack = role.requiredStack || [];
+          const roleMet = roleStack.filter((s) => s.status === 'met').length;
+          const rolePct = roleStack.length ? Math.round((roleMet / roleStack.length) * 100) : role.matchPercentage || 75;
 
           return (
             <div
@@ -130,40 +132,42 @@ export const TargetRolesView: React.FC<TargetRolesViewProps> = ({
           </h3>
 
           <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-            {activeRole.requiredStack.map((req) => (
-              <div
-                key={req.skill}
-                className={`p-4 rounded-xl border flex items-center justify-between gap-3 ${
-                  req.status === 'met'
-                    ? 'bg-emerald-50/50 border-emerald-200/80 text-emerald-900'
-                    : 'bg-amber-50/50 border-amber-200/80 text-amber-900'
-                }`}
-              >
-                <div className="flex items-center gap-2.5">
-                  {req.status === 'met' ? (
-                    <CheckCircle2 className="w-4 h-4 text-emerald-600 shrink-0" />
-                  ) : (
-                    <AlertCircle className="w-4 h-4 text-amber-600 shrink-0" />
-                  )}
-                  <div>
-                    <span className="text-xs font-bold block">{req.skill}</span>
-                    <span className="text-[11px] opacity-75">
-                      {req.status === 'met' ? 'Verified in your evidence vault' : 'Recommended gap to close'}
-                    </span>
-                  </div>
-                </div>
-
-                <span
-                  className={`text-[10px] font-bold px-2 py-0.5 rounded-md uppercase tracking-wider ${
+            {activeStack.map((req: any, idx: number) => {
+              const skillTitle = req.name || req.skill || `Competency ${idx + 1}`;
+              return (
+                <div
+                  key={req.name || req.skill || idx}
+                  className={`p-4 rounded-xl border flex items-center justify-between gap-3 ${
                     req.status === 'met'
-                      ? 'bg-emerald-100 text-emerald-800'
-                      : 'bg-amber-100 text-amber-800'
+                      ? 'bg-emerald-50/50 border-emerald-200/80 text-emerald-900'
+                      : 'bg-amber-50/50 border-amber-200/80 text-amber-900'
                   }`}
                 >
-                  {req.status === 'met' ? 'Completed' : 'Missing'}
-                </span>
-              </div>
-            ))}
+                  <div className="flex items-center gap-2.5">
+                    {req.status === 'met' ? (
+                      <CheckCircle2 className="w-4 h-4 text-emerald-600 shrink-0" />
+                    ) : (
+                      <AlertCircle className="w-4 h-4 text-amber-600 shrink-0" />
+                    )}
+                    <div>
+                      <span className="text-xs font-bold block">{skillTitle}</span>
+                      <span className="text-[11px] opacity-75">
+                        {req.status === 'met' ? 'Verified in your evidence vault' : 'Recommended gap to close'}
+                      </span>
+                    </div>
+                  </div>
+                  <span
+                    className={`text-[10px] font-bold px-2 py-0.5 rounded-md uppercase tracking-wider ${
+                      req.status === 'met'
+                        ? 'bg-emerald-100 text-emerald-800'
+                        : 'bg-amber-100 text-amber-800'
+                    }`}
+                  >
+                    {req.status === 'met' ? 'Completed' : 'Missing'}
+                  </span>
+                </div>
+              );
+            })}
           </div>
         </div>
 

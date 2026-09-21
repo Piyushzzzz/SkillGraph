@@ -50,9 +50,10 @@ export const GapAnalysisView: React.FC<GapAnalysisViewProps> = ({
     );
   }
 
-  const strongSkills = activeRole.requiredStack.filter((s) => s.status === 'met');
-  const missingSkills = activeRole.requiredStack.filter((s) => s.status !== 'met');
-  const matchPct = Math.round((strongSkills.length / activeRole.requiredStack.length) * 100);
+  const stack = activeRole.requiredStack || [];
+  const strongSkills = stack.filter((s) => s.status === 'met');
+  const missingSkills = stack.filter((s) => s.status !== 'met');
+  const matchPct = stack.length ? Math.round((strongSkills.length / stack.length) * 100) : activeRole.matchPercentage || 70;
 
   return (
     <div className="py-8 px-4 sm:px-8 max-w-6xl mx-auto text-left space-y-8 animate-fade-in">
@@ -77,7 +78,7 @@ export const GapAnalysisView: React.FC<GapAnalysisViewProps> = ({
           >
             {targetRoles.map((r) => (
               <option key={r.id} value={r.id}>
-                {r.shortTitle}
+                {r.shortTitle || r.title}
               </option>
             ))}
           </select>
@@ -94,7 +95,7 @@ export const GapAnalysisView: React.FC<GapAnalysisViewProps> = ({
             You are {matchPct}% ready for this role
           </h2>
           <p className="text-xs sm:text-sm text-slate-500">
-            You have satisfied {strongSkills.length} of {activeRole.requiredStack.length} requirements. You only need {missingSkills.length} more skill{missingSkills.length > 1 ? 's' : ''} to reach full readiness.
+            You have satisfied {strongSkills.length} of {stack.length} requirements. You only need {missingSkills.length} more skill{missingSkills.length === 1 ? '' : 's'} to reach full readiness.
           </p>
         </div>
 
@@ -123,22 +124,25 @@ export const GapAnalysisView: React.FC<GapAnalysisViewProps> = ({
           </div>
 
           <div className="space-y-3">
-            {strongSkills.map((s) => (
-              <div
-                key={s.skill}
-                className="saas-card p-4 bg-white border border-slate-200 flex items-start justify-between gap-3"
-              >
-                <div>
-                  <h4 className="text-sm font-bold text-slate-900">{s.skill}</h4>
-                  <p className="text-xs text-slate-500 mt-0.5">
-                    Demonstrated in your repositories and verified coursework.
-                  </p>
+            {strongSkills.map((s: any, idx: number) => {
+              const skillTitle = s.name || s.skill || `Skill ${idx + 1}`;
+              return (
+                <div
+                  key={s.name || s.skill || idx}
+                  className="saas-card p-4 bg-white border border-slate-200 flex items-start justify-between gap-3"
+                >
+                  <div>
+                    <h4 className="text-sm font-bold text-slate-900">{skillTitle}</h4>
+                    <p className="text-xs text-slate-500 mt-0.5">
+                      Demonstrated in your repositories and verified coursework.
+                    </p>
+                  </div>
+                  <span className="text-[10px] font-bold text-emerald-700 bg-emerald-50 px-2 py-0.5 rounded-md border border-emerald-200 shrink-0">
+                    MET
+                  </span>
                 </div>
-                <span className="text-[10px] font-bold text-emerald-700 bg-emerald-50 px-2 py-0.5 rounded-md border border-emerald-200 shrink-0">
-                  MET
-                </span>
-              </div>
-            ))}
+              );
+            })}
           </div>
         </div>
 
@@ -155,35 +159,38 @@ export const GapAnalysisView: React.FC<GapAnalysisViewProps> = ({
           </div>
 
           <div className="space-y-3">
-            {missingSkills.map((s) => (
-              <div
-                key={s.skill}
-                className="saas-card p-4 bg-amber-50/40 border border-amber-200/80 space-y-2"
-              >
-                <div className="flex items-start justify-between gap-3">
-                  <div>
-                    <h4 className="text-sm font-bold text-amber-950">{s.skill}</h4>
-                    <p className="text-xs text-amber-800/80 mt-0.5">
-                      Required for senior-level technical screening in this role.
-                    </p>
+            {missingSkills.map((s: any, idx: number) => {
+              const skillTitle = s.name || s.skill || `Skill ${idx + 1}`;
+              return (
+                <div
+                  key={s.name || s.skill || idx}
+                  className="saas-card p-4 bg-amber-50/40 border border-amber-200/80 space-y-2"
+                >
+                  <div className="flex items-start justify-between gap-3">
+                    <div>
+                      <h4 className="text-sm font-bold text-amber-950">{skillTitle}</h4>
+                      <p className="text-xs text-amber-800/80 mt-0.5">
+                        Required for technical screening in this role.
+                      </p>
+                    </div>
+                    <span className="text-[10px] font-bold text-amber-800 bg-amber-100 px-2 py-0.5 rounded-md shrink-0">
+                      MISSING
+                    </span>
                   </div>
-                  <span className="text-[10px] font-bold text-amber-800 bg-amber-100 px-2 py-0.5 rounded-md shrink-0">
-                    MISSING
-                  </span>
-                </div>
 
-                <div className="pt-2 flex items-center justify-between text-xs">
-                  <span className="text-[11px] text-amber-800/70 font-medium">Recommended: 3-day coding mission</span>
-                  <button
-                    onClick={() => onNavigate('/mission')}
-                    className="text-xs font-semibold text-blue-600 hover:underline flex items-center gap-1"
-                  >
-                    <span>Start Project</span>
-                    <ArrowRight className="w-3 h-3" />
-                  </button>
+                  <div className="pt-2 flex items-center justify-between text-xs">
+                    <span className="text-[11px] text-amber-800/70 font-medium">Recommended: 3-day coding mission</span>
+                    <button
+                      onClick={() => onNavigate('/mission')}
+                      className="text-xs font-semibold text-blue-600 hover:underline flex items-center gap-1"
+                    >
+                      <span>Start Project</span>
+                      <ArrowRight className="w-3 h-3" />
+                    </button>
+                  </div>
                 </div>
-              </div>
-            ))}
+              );
+            })}
           </div>
         </div>
       </div>

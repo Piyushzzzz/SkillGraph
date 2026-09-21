@@ -157,8 +157,9 @@ export const NavigationHeader: React.FC<NavigationHeaderProps> = ({
                   <div className="py-1 max-h-64 overflow-y-auto">
                     {targetRoles.map((role) => {
                       const isSelected = role.id === (activeRoleId || activeRole?.id);
-                      const met = role.requiredStack.filter((s) => s.status === 'met').length;
-                      const pct = Math.round((met / role.requiredStack.length) * 100);
+                      const stack = role.requiredStack || [];
+                      const met = stack.filter((s) => s.status === 'met').length;
+                      const pct = stack.length ? Math.round((met / stack.length) * 100) : role.matchPercentage || 75;
 
                       return (
                         <button

@@ -12,6 +12,7 @@ import {
   ProjectMission,
   InsightsStatusResponse
 } from '../types';
+import { targetRolesList } from '../data/mockData';
 
 // Resolve NEXT_PUBLIC_API_URL safely across Vite, Next.js, and browser environments
 export const API_BASE: string =
@@ -381,22 +382,24 @@ export async function deleteEvidence(
  */
 export async function getTargetRoles(): Promise<ApiResponse<TargetRole[]>> {
   const res = await apiFetch<any[]>('/api/roles');
-  if (!res.data || !Array.isArray(res.data)) return res as any;
+  if (!res.data || !Array.isArray(res.data) || res.data.length === 0) {
+    return { data: targetRolesList, error: null, status: res.status || 200 };
+  }
 
-  const mapped: TargetRole[] = res.data.map((r: any) => ({
-    id: String(r.id || r.role_id),
-    title: r.title || r.name,
-    category: r.category || 'Engineering',
-    matchPercentage: r.match_percentage || 75,
-    verifiedMatches: r.verified_matches || 8,
-    totalRequired: r.total_required || 12,
-    shortDescription: r.description || `Industry curriculum track for ${r.title || r.name}.`,
-    topSkills: r.top_skills || ['Algorithms', 'System Design', 'APIs'],
-    industryOutlook: r.outlook || 'High Demand (Tier-1 Tech)',
-    avgSalary: r.salary || '$135,000'
-  }));
+  const mapped: TargetRole[] = res.data.map((r: any) => {
+    const roleId = String(r.id || r.role_id);
+    const defaultRole = targetRolesList.find((t) => t.id === roleId) || targetRolesList[0];
+    return {
+      ...defaultRole,
+      id: roleId,
+      title: r.title || r.name || defaultRole.title,
+      shortTitle: defaultRole.shortTitle || r.name || r.title,
+      description: r.description || defaultRole.description,
+      requiredStack: defaultRole.requiredStack || []
+    };
+  });
 
-  return { ...res, data: mapped };
+  return { ...res, data: mapped.length > 0 ? mapped : targetRolesList };
 }
 
 /**
