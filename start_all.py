@@ -78,7 +78,7 @@ def main():
     print("\n" + "=" * 70)
     print("  ✅ SKILLGRAPH SYSTEM IS FULLY OPERATIONAL!")
     print("=" * 70)
-    print("  • Web Application:  http://localhost:3000")
+    print("  • Web Application:  http://127.0.0.1:3000 (Recommended) or http://localhost:3000")
     print("  • OpenAPI Swagger:  http://127.0.0.1:8000/docs")
     print("  • ReDoc Schema:     http://127.0.0.1:8000/redoc")
     print("  • Press Ctrl+C to terminate both servers.")

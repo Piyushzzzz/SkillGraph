@@ -1,6 +1,6 @@
 from datetime import datetime
 from typing import Optional, List
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, Field, ConfigDict
 from app.utils.validators import validate_cgpa_value, validate_semester_value, validate_grade_value
 
 try:
@@ -54,9 +54,7 @@ class UserProfileResponse(UserProfileBase):
     created_at: datetime
     updated_at: datetime
 
-    class Config:
-        from_attributes = True
-        orm_mode = True
+    model_config = ConfigDict(from_attributes=True)
 
 
 class SubjectBase(BaseModel):
@@ -77,9 +75,7 @@ class SubjectResponse(SubjectBase):
     id: int
     user_id: int
 
-    class Config:
-        from_attributes = True
-        orm_mode = True
+    model_config = ConfigDict(from_attributes=True)
 
 
 class AcademicSummaryResponse(BaseModel):
@@ -89,6 +85,4 @@ class AcademicSummaryResponse(BaseModel):
     total_credits: float = 0.0
     subjects: List[SubjectResponse] = []
 
-    class Config:
-        from_attributes = True
-        orm_mode = True
+    model_config = ConfigDict(from_attributes=True)

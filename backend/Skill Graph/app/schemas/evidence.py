@@ -1,6 +1,6 @@
 import datetime as dt
 from typing import Optional, List, Any
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, Field, ConfigDict
 from app.utils.validators import validate_url_value, validate_evidence_type_value
 
 try:
@@ -25,9 +25,7 @@ class SkillLinkResponse(BaseModel):
     confidence: float
     reason: Optional[str] = None
 
-    class Config:
-        from_attributes = True
-        orm_mode = True
+    model_config = ConfigDict(from_attributes=True)
 
 
 # --- Base Evidence ---
@@ -55,9 +53,7 @@ class EvidenceResponse(EvidenceBase):
     skills: List[SkillLinkResponse] = []
     details: Optional[Any] = None
 
-    class Config:
-        from_attributes = True
-        orm_mode = True
+    model_config = ConfigDict(from_attributes=True)
 
 
 # --- Project Evidence ---
@@ -88,9 +84,7 @@ class ProjectDetailResponse(BaseModel):
     github_url: Optional[str] = None
     demo_url: Optional[str] = None
 
-    class Config:
-        from_attributes = True
-        orm_mode = True
+    model_config = ConfigDict(from_attributes=True)
 
 
 # --- Hackathon Evidence ---
@@ -129,9 +123,7 @@ class HackathonDetailResponse(BaseModel):
     demo_url: Optional[str] = None
     achievement: Optional[str] = None
 
-    class Config:
-        from_attributes = True
-        orm_mode = True
+    model_config = ConfigDict(from_attributes=True)
 
 
 # --- Certificate Evidence ---
@@ -156,9 +148,7 @@ class CertificateDetailResponse(BaseModel):
     certificate_name: str
     certificate_url: Optional[str] = None
 
-    class Config:
-        from_attributes = True
-        orm_mode = True
+    model_config = ConfigDict(from_attributes=True)
 
 
 # --- General Evidence Creation ---

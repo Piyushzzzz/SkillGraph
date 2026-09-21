@@ -33,6 +33,7 @@ export const NavigationHeader: React.FC<NavigationHeaderProps> = ({
   onNavigate,
   targetRoles,
   activeRoleId,
+  insightsStatus,
   onSelectRole,
   onOpenLedger,
   onOpenAddProject,

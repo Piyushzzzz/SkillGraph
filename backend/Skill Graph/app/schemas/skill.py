@@ -1,5 +1,5 @@
 from typing import Optional, List
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, Field, ConfigDict
 
 
 class SkillBase(BaseModel):
@@ -14,9 +14,7 @@ class SkillCreate(SkillBase):
 
 
 class SkillResponse(SkillBase):
-    class Config:
-        from_attributes = True
-        orm_mode = True
+    model_config = ConfigDict(from_attributes=True)
 
 
 class SkillDetailResponse(SkillResponse):
@@ -60,14 +58,10 @@ class RoleBase(BaseModel):
 class RoleResponse(RoleBase):
     skills_count: int = 0
 
-    class Config:
-        from_attributes = True
-        orm_mode = True
+    model_config = ConfigDict(from_attributes=True)
 
 
 class RoleDetailResponse(RoleBase):
     skills: List[RoleSkillItem] = []
 
-    class Config:
-        from_attributes = True
-        orm_mode = True
+    model_config = ConfigDict(from_attributes=True)
