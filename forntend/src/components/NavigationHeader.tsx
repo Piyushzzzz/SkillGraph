@@ -74,7 +74,8 @@ export const NavigationHeader: React.FC<NavigationHeaderProps> = ({
     { path: '/evidence', label: 'Projects' },
     { path: '/roles', label: 'Career Roles' },
     { path: '/gap-analysis', label: 'Gap Analysis' },
-    { path: '/mission', label: 'Missions' }
+    { path: '/mission', label: 'Missions' },
+    { path: '/integrations', label: 'iNSIGHTS' }
   ];
 
   return (
@@ -119,7 +120,18 @@ export const NavigationHeader: React.FC<NavigationHeaderProps> = ({
         </div>
 
         {/* 3. Right Utility Center */}
-        <div className="flex items-center gap-3">
+        <div className="flex items-center gap-2.5">
+          {/* iNSIGHTS Live Status Badge */}
+          <button
+            onClick={() => onNavigate('/integrations')}
+            className="hidden lg:flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-slate-50 hover:bg-slate-100 border border-slate-200 text-xs font-medium text-slate-700 shadow-2xs hover:border-blue-300 transition-all cursor-pointer whitespace-nowrap"
+            title="iNSIGHTS Intelligence Subsystem"
+          >
+            <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse" />
+            <span className="text-slate-500 font-normal">iNSIGHTS:</span>
+            <span className="text-emerald-700 font-bold">{insightsStatus?.status || 'Active'}</span>
+          </button>
+
           {/* Target Role Selector Pill */}
           {targetRoles && targetRoles.length > 0 && (
             <div className="relative hidden md:block" ref={roleMenuRef}>
