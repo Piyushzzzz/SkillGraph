@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState } from 'react';
 import {
   StudentProfile,
   TargetRole,
@@ -40,9 +40,6 @@ interface OverviewDashboardProps {
   onOpenLedger: () => void;
   onOpenMissionModal: () => void;
   onShowToast: (title: string, message: string, type?: 'success' | 'info') => void;
-  studentMode?: 'fresh' | 'demo';
-  onSwitchStudentMode?: (mode: 'fresh' | 'demo') => void;
-  onOpenAddProject?: () => void;
 }
 
 export const OverviewDashboard: React.FC<OverviewDashboardProps> = ({
@@ -53,10 +50,7 @@ export const OverviewDashboard: React.FC<OverviewDashboardProps> = ({
   onNavigate,
   onOpenLedger,
   onOpenMissionModal,
-  onShowToast,
-  studentMode = 'demo',
-  onSwitchStudentMode,
-  onOpenAddProject
+  onShowToast
 }) => {
   const academicCount = (profile.academicCourses && profile.academicCourses.length > 0)
     ? profile.academicCourses.length
@@ -76,18 +70,10 @@ export const OverviewDashboard: React.FC<OverviewDashboardProps> = ({
     userVerifiedSkills.length > 0 ? userVerifiedSkills[0] : null
   );
 
-  useEffect(() => {
-    if (userVerifiedSkills.length > 0) {
-      if (!selectedNode || !userVerifiedSkills.some((s) => s.id === selectedNode.id)) {
-        setSelectedNode(userVerifiedSkills[0]);
-      }
-    } else {
-      setSelectedNode(null);
-    }
-  }, [userVerifiedSkills.length]);
-
   const hasAnyData =
     evidenceItems.length > 0 ||
+    userVerifiedSkills.length > 0 ||
+    (profile.university && profile.university.length > 0) ||
     (profile.academicCourses && profile.academicCourses.length > 0);
 
   const handleCopySha = () => {
@@ -115,10 +101,15 @@ export const OverviewDashboard: React.FC<OverviewDashboardProps> = ({
                   className="w-18 h-18 sm:w-20 sm:h-20 rounded-2xl object-cover border-2 border-[#E2E8F0] shadow-sm"
                 />
               ) : (
-                <div className="w-18 h-18 sm:w-20 sm:h-20 rounded-2xl bg-gradient-to-tr from-[#111827] to-[#1E293B] border border-[#E2E8F0] flex items-center justify-center text-white shadow-sm font-mono font-bold text-xl">
+                <div className="w-18 h-18 sm:w-20 sm:h-20 rounded-2xl bg-gradient-to-tr from-[#111827] to-[#1E293B] border border-[#E2E8F0] flex items-center justify-center text-white shadow-sm font-mono font-bold text-xl tracking-wider">
                   {profile.fullName
-                    ? profile.fullName.trim().split(/\s+/).map((n) => n[0]).join('').substring(0, 2).toUpperCase()
-                    : 'ST'}
+                    ? profile.fullName
+                        .split(' ')
+                        .map((n) => n[0])
+                        .slice(0, 2)
+                        .join('')
+                        .toUpperCase()
+                    : 'SC'}
                 </div>
               )}
               {profile.institutionalTranscriptVerified && profile.cgpa && profile.cgpa > 0 && (
@@ -167,8 +158,10 @@ export const OverviewDashboard: React.FC<OverviewDashboardProps> = ({
             ) : (
               <div className="px-4 py-2.5 rounded-xl bg-white border border-[#E2E8F0] shadow-xs text-left">
                 <div className="text-[10px] font-mono text-[#64748B] uppercase">Cumulative GPA</div>
-                <div className="text-sm font-mono font-semibold text-[#94A3B8]">
-                  Not Submitted
+                <div className="flex items-baseline gap-1.5">
+                  <span className="text-sm font-mono font-bold text-slate-400">
+                    Not Submitted
+                  </span>
                 </div>
               </div>
             )}
@@ -195,128 +188,40 @@ export const OverviewDashboard: React.FC<OverviewDashboardProps> = ({
         </div>
       </section>
 
-      {/* 2. Onboarding Launchpad for Fresh User / Clean Slate */}
-      {(studentMode === 'fresh' || !hasAnyData) && (
-        <section className="p-6 rounded-2xl bg-gradient-to-br from-slate-900 via-[#1E293B] to-[#0F172A] text-white shadow-md relative overflow-hidden card-hover-3d">
-          <div className="absolute top-0 right-0 w-96 h-96 bg-cyan-500/10 rounded-full blur-3xl pointer-events-none" />
-          <div className="relative z-10 space-y-4">
-            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b border-slate-700/60 pb-3">
-              <div className="flex items-center gap-2">
-                <span className="p-1.5 rounded-lg bg-emerald-500/20 text-emerald-400 border border-emerald-500/30">
-                  <Sparkles className="w-4 h-4" />
-                </span>
-                <div>
-                  <h2 className="text-sm font-bold font-mono text-white flex items-center gap-2">
-                    Fresh Student Launchpad • Clean Slate Ready
-                  </h2>
-                  <p className="text-[11px] text-slate-300 font-mono">
-                    Zero prefilled claims. Follow the 3-step path to build your verified SkillGraph.
-                  </p>
-                </div>
-              </div>
-
-              {onSwitchStudentMode && (
-                <button
-                  onClick={() => onSwitchStudentMode('demo')}
-                  className="self-start sm:self-auto px-3 py-1.5 rounded-lg bg-slate-800 hover:bg-slate-700 border border-slate-600 text-xs font-mono text-cyan-300 hover:text-white transition-colors flex items-center gap-1.5"
-                >
-                  <ShieldCheck className="w-3.5 h-3.5 text-cyan-400" />
-                  <span>Preview Demo Showcase</span>
-                  <ArrowRight className="w-3 h-3" />
-                </button>
-              )}
-            </div>
-
-            {/* 3 Step Action Grid */}
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-3.5 pt-1">
-              {/* Step 1 */}
-              <div
-                onClick={() => {
-                  if (onOpenAddProject) onOpenAddProject();
-                  else onNavigate('/evidence');
-                }}
-                className="p-4 rounded-xl bg-slate-800/80 hover:bg-slate-800 border border-slate-700 hover:border-cyan-400/60 cursor-pointer transition-all group flex flex-col justify-between"
-              >
-                <div>
-                  <div className="flex items-center justify-between mb-2">
-                    <span className="text-[10px] font-mono px-2 py-0.5 rounded bg-cyan-950 text-cyan-400 border border-cyan-800 font-bold">
-                      STEP 1
-                    </span>
-                    <Layers className="w-4 h-4 text-cyan-400 group-hover:scale-110 transition-transform" />
-                  </div>
-                  <h3 className="text-xs font-mono font-bold text-white group-hover:text-cyan-300 transition-colors">
-                    Deposit First Project
-                  </h3>
-                  <p className="text-[11px] text-slate-400 mt-1 leading-snug">
-                    Submit a GitHub repository or codebase to unlock programming nodes.
-                  </p>
-                </div>
-                <div className="mt-3 flex items-center justify-between text-[11px] font-mono text-cyan-400 font-semibold">
-                  <span>{projectsCount} Submitted</span>
-                  <PlusCircle className="w-3.5 h-3.5" />
-                </div>
-              </div>
-
-              {/* Step 2 */}
-              <div
-                onClick={() => onNavigate('/profile')}
-                className="p-4 rounded-xl bg-slate-800/80 hover:bg-slate-800 border border-slate-700 hover:border-emerald-400/60 cursor-pointer transition-all group flex flex-col justify-between"
-              >
-                <div>
-                  <div className="flex items-center justify-between mb-2">
-                    <span className="text-[10px] font-mono px-2 py-0.5 rounded bg-emerald-950 text-emerald-400 border border-emerald-800 font-bold">
-                      STEP 2
-                    </span>
-                    <GraduationCap className="w-4 h-4 text-emerald-400 group-hover:scale-110 transition-transform" />
-                  </div>
-                  <h3 className="text-xs font-mono font-bold text-white group-hover:text-emerald-300 transition-colors">
-                    Link University Courses
-                  </h3>
-                  <p className="text-[11px] text-slate-400 mt-1 leading-snug">
-                    Record computer science coursework to ground theoretical competencies.
-                  </p>
-                </div>
-                <div className="mt-3 flex items-center justify-between text-[11px] font-mono text-emerald-400 font-semibold">
-                  <span>{academicCount} Units Linked</span>
-                  <ArrowRight className="w-3.5 h-3.5" />
-                </div>
-              </div>
-
-              {/* Step 3 */}
-              <div
-                onClick={onOpenMissionModal}
-                className="p-4 rounded-xl bg-slate-800/80 hover:bg-slate-800 border border-slate-700 hover:border-purple-400/60 cursor-pointer transition-all group flex flex-col justify-between"
-              >
-                <div>
-                  <div className="flex items-center justify-between mb-2">
-                    <span className="text-[10px] font-mono px-2 py-0.5 rounded bg-purple-950 text-purple-400 border border-purple-800 font-bold">
-                      STEP 3
-                    </span>
-                    <Zap className="w-4 h-4 text-purple-400 group-hover:scale-110 transition-transform" />
-                  </div>
-                  <h3 className="text-xs font-mono font-bold text-white group-hover:text-purple-300 transition-colors">
-                    Generate AI Mission
-                  </h3>
-                  <p className="text-[11px] text-slate-400 mt-1 leading-snug">
-                    Synthesize personalized project missions based on real industry skill gaps.
-                  </p>
-                </div>
-                <div className="mt-3 flex items-center justify-between text-[11px] font-mono text-purple-400 font-semibold">
-                  <span>Ready to Synthesize</span>
-                  <Sparkles className="w-3.5 h-3.5" />
-                </div>
-              </div>
-            </div>
-          </div>
-        </section>
-      )}
-
-      {/* Real Dashboard Metrics & Evidence Sections */}
-      <div className="space-y-6">
-        {/* ======================================================== */}
-        {/* 5 SEQUENTIAL ANIMATED METRIC CARDS (Requirement 6)       */}
-        {/* ======================================================== */}
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-3.5">
+      {/* 2. Onboarding Empty State if Student Has No Data */}
+      {!hasAnyData ? (
+        <EmptyState
+          title="Build your SkillGraph"
+          description="Start by adding your academic profile, projects and achievements. SkillGraph will use your evidence to build your capability graph."
+          icon={Sparkles}
+          actions={[
+            {
+              label: 'Complete Profile',
+              onClick: () => onNavigate('/profile'),
+              variant: 'primary',
+              icon: User
+            },
+            {
+              label: 'Add Evidence',
+              onClick: () => onNavigate('/evidence'),
+              variant: 'secondary',
+              icon: PlusCircle
+            },
+            {
+              label: 'Connect GitHub',
+              onClick: () => onNavigate('/integrations'),
+              variant: 'secondary',
+              icon: GitBranch
+            }
+          ]}
+        />
+      ) : (
+        /* Real Dashboard Metrics & Evidence Sections */
+        <div className="space-y-6">
+          {/* ======================================================== */}
+          {/* 5 SEQUENTIAL ANIMATED METRIC CARDS (Requirement 6)       */}
+          {/* ======================================================== */}
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-3.5">
             {/* 1. Academic Evidence */}
             <div className="p-4.5 rounded-2xl bg-white border border-[#E2E8F0] hover:border-blue-300 shadow-xs card-hover-3d transition-all">
               <div className="flex items-center justify-between text-xs text-[#64748B] mb-2 font-mono">
@@ -593,6 +498,7 @@ export const OverviewDashboard: React.FC<OverviewDashboardProps> = ({
             </div>
           </div>
         </div>
+      )}
     </div>
   );
 };

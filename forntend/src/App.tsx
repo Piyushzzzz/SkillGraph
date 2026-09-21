@@ -115,31 +115,13 @@ export function App() {
     return () => window.removeEventListener('popstate', handlePopState);
   }, []);
 
-  // 2. Real Backend Data & Session State
-  const [studentMode, setStudentModeState] = useState<'fresh' | 'demo'>(() => api.getStudentMode());
+  // 2. Real Backend Data State
   const [profile, setProfile] = useState<StudentProfile | null>(null);
   const [evidenceItems, setEvidenceItems] = useState<EvidenceItem[]>([]);
   const [skillNodes, setSkillNodes] = useState<SkillNodeData[]>([]);
   const [targetRoles, setTargetRoles] = useState<TargetRole[]>([]);
   const [activeRoleId, setActiveRoleId] = useState<string>('software-developer');
   const [mission, setMission] = useState<ProjectMission | null>(null);
-
-  const freshStudentTemplate: StudentProfile = {
-    id: 'student-fresh',
-    fullName: 'New Student',
-    email: '',
-    university: undefined,
-    degree: undefined,
-    major: undefined,
-    semester: undefined,
-    year: undefined,
-    cgpa: undefined,
-    maxCgpa: 10.0,
-    institutionalTranscriptVerified: false,
-    cohortPercentile: undefined,
-    publicId: undefined,
-    academicCourses: []
-  };
 
   // iNSIGHTS Integration State
   const [insightsStatus, setInsightsStatus] = useState<InsightsStatusResponse | null>(null);
@@ -208,34 +190,22 @@ export function App() {
         api.getInsightsStatus().catch(() => null)
       ]);
 
-      const currentMode = api.getStudentMode();
+      const isDemo = fetchedProfile?.id === '1' || fetchedProfile?.email === 'alex.mercer@university.edu';
 
-      if (currentMode === 'fresh') {
-        setProfile(fetchedProfile || freshStudentTemplate);
-        // For fresh mode: clean slate (0 evidence items)
-        setEvidenceItems(Array.isArray(fetchedEvidence) ? fetchedEvidence : []);
-        // For fresh mode: if backend returned nodes, use them; otherwise clean GAP nodes
-        if (fetchedSkills?.nodes && fetchedSkills.nodes.length > 0) {
-          setSkillNodes(fetchedSkills.nodes);
+      if (fetchedProfile) {
+        setProfile(fetchedProfile);
+        if (isDemo) {
+          setEvidenceItems(fetchedEvidence && fetchedEvidence.length > 0 ? fetchedEvidence : initialEvidence);
+          setSkillNodes(fetchedSkills?.nodes && fetchedSkills.nodes.length > 0 ? fetchedSkills.nodes : initialSkillNodes);
         } else {
-          setSkillNodes(
-            initialSkillNodes.map((n) => ({
-              ...n,
-              status: 'GAP',
-              confidence: 0.0,
-              badge: 'Unverified (Fresh)',
-              projects: [],
-              github: [],
-              academic: 'Unmatched',
-              lastUpdated: 'Not Started'
-            }))
-          );
+          // Fresh user: absolute zero until explicit evidence is added
+          setEvidenceItems(Array.isArray(fetchedEvidence) ? fetchedEvidence : []);
+          setSkillNodes(fetchedSkills?.nodes && fetchedSkills.nodes.length > 0 ? fetchedSkills.nodes : []);
         }
       } else {
-        // Demo Showcase mode (Alex Mercer)
-        setProfile(fetchedProfile || initialProfile);
-        setEvidenceItems(fetchedEvidence && fetchedEvidence.length > 0 ? fetchedEvidence : initialEvidence);
-        setSkillNodes(fetchedSkills?.nodes && fetchedSkills.nodes.length > 0 ? fetchedSkills.nodes : initialSkillNodes);
+        setProfile(initialProfile);
+        setEvidenceItems(initialEvidence);
+        setSkillNodes(initialSkillNodes);
       }
       
       const roles = fetchedRoles && fetchedRoles.length > 0 ? fetchedRoles : targetRolesList;
@@ -272,44 +242,12 @@ export function App() {
     loadBackendData();
   }, [loadBackendData]);
 
-  // Student Mode Switcher (Fresh Slate vs Demo Showcase)
-  const handleSwitchStudentMode = async (mode: 'fresh' | 'demo') => {
-    api.setStudentMode(mode);
-    setStudentModeState(mode);
-    if (mode === 'fresh') {
-      try {
-        const res = await api.createStudentProfile({
-          name: 'Alex Chen (Fresh Student)',
-          email: `fresh.student.${Date.now()}@university.edu`,
-          university: 'State University of Technology',
-          branch: 'Computer Science & Engineering',
-          semester: 1,
-          cgpa: 0.0
-        });
-        if (res.data?.id) {
-          api.setActiveUserId(res.data.id);
-        }
-      } catch (err) {
-        console.warn('Backend fresh student registration:', err);
-      }
-      showToast('Clean Slate Active', 'Previewing fresh new student with 0 evidence and clean skills topology.', 'info');
-    } else {
-      api.setActiveUserId(1); // Demo user Alex Mercer
-      showToast('Showcase Demo Active', 'Switched to Alex Mercer verified demo account with 8 proofs.', 'success');
+  // Auth Handlers
+  const handleLoginSuccess = async (email: string) => {
+    if (email.toLowerCase().includes('alex')) {
+      api.setActiveUserId(1);
     }
     await loadBackendData();
-  };
-
-  // Auth Handlers
-  const handleLoginSuccess = (email: string) => {
-    if (!profile) {
-      setProfile({
-        id: `usr_${Date.now()}`,
-        fullName: email.split('@')[0],
-        email: email,
-        academicCourses: []
-      });
-    }
     showToast('Signed In', `Welcome back, ${email}`, 'success');
   };
 
@@ -325,11 +263,9 @@ export function App() {
       });
       if (res.data?.id) {
         api.setActiveUserId(res.data.id);
-        api.setStudentMode('fresh');
-        setStudentModeState('fresh');
       }
     } catch (err) {
-      console.warn('Signup profile registration:', err);
+      console.warn('Signup registration:', err);
     }
     await loadBackendData();
     showToast('Account Created', 'Welcome to SkillGraph! Your clean slate is ready.', 'success');
@@ -420,8 +356,6 @@ export function App() {
         onSelectRole={setActiveRoleId}
         onOpenLedger={() => setIsLedgerOpen(true)}
         profile={activeStudentProfile}
-        studentMode={studentMode}
-        onSwitchStudentMode={handleSwitchStudentMode}
       />
 
       {/* Main Container: Sidebar + Content */}
@@ -446,9 +380,6 @@ export function App() {
               onOpenLedger={() => setIsLedgerOpen(true)}
               onOpenMissionModal={() => setIsMissionModalOpen(true)}
               onShowToast={showToast}
-              studentMode={studentMode}
-              onSwitchStudentMode={handleSwitchStudentMode}
-              onOpenAddProject={() => setIsAddProjectOpen(true)}
             />
           )}
 

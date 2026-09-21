@@ -14,11 +14,10 @@ import {
   Rocket,
   Code2,
   UserCheck,
+  Home,
+  LogOut,
   User,
-  Compass,
-  Sparkles,
-  UserPlus,
-  LogOut
+  Compass
 } from 'lucide-react';
 
 interface NavigationHeaderProps {
@@ -30,8 +29,6 @@ interface NavigationHeaderProps {
   onSelectRole: (roleId: string) => void;
   onOpenLedger: () => void;
   profile?: StudentProfile;
-  studentMode?: 'fresh' | 'demo';
-  onSwitchStudentMode?: (mode: 'fresh' | 'demo') => void;
 }
 
 export const NavigationHeader: React.FC<NavigationHeaderProps> = ({
@@ -42,9 +39,7 @@ export const NavigationHeader: React.FC<NavigationHeaderProps> = ({
   insightsStatus,
   onSelectRole,
   onOpenLedger,
-  profile,
-  studentMode = 'demo',
-  onSwitchStudentMode
+  profile
 }) => {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const activeRole = targetRoles.find((r) => r.id === activeRoleId) || targetRoles[0];
@@ -147,37 +142,6 @@ export const NavigationHeader: React.FC<NavigationHeaderProps> = ({
           </div>
         )}
 
-        {/* Student Mode Switcher: Fresh Slate vs Showcase Demo */}
-        {onSwitchStudentMode && (
-          <div className="flex items-center p-0.5 rounded-xl bg-[#F1F5F9] border border-[#E2E8F0] shadow-inner">
-            <button
-              onClick={() => onSwitchStudentMode('fresh')}
-              className={`flex items-center gap-1.5 px-2.5 py-1 rounded-lg text-[11px] font-mono transition-all duration-200 ${
-                studentMode === 'fresh'
-                  ? 'bg-white text-emerald-700 border border-emerald-300 font-bold shadow-xs'
-                  : 'text-[#64748B] hover:text-[#0F172A]'
-              }`}
-              title="Clean start for a brand new student (0 proofs, clean topology)"
-            >
-              <Sparkles className={`w-3 h-3 ${studentMode === 'fresh' ? 'text-emerald-600 animate-pulse' : 'text-slate-400'}`} />
-              <span>Clean Slate</span>
-            </button>
-            <button
-              onClick={() => onSwitchStudentMode('demo')}
-              className={`flex items-center gap-1.5 px-2.5 py-1 rounded-lg text-[11px] font-mono transition-all duration-200 ${
-                studentMode === 'demo'
-                  ? 'bg-[#111827] text-white font-bold shadow-xs'
-                  : 'text-[#64748B] hover:text-[#0F172A]'
-              }`}
-              title="Showcase account with 8 verified proofs and courses"
-            >
-              <ShieldCheck className={`w-3 h-3 ${studentMode === 'demo' ? 'text-cyan-400' : 'text-slate-400'}`} />
-              <span className="hidden sm:inline">Alex Mercer (Demo)</span>
-              <span className="sm:hidden">Demo</span>
-            </button>
-          </div>
-        )}
-
         {/* Ledger Audit Quick Trigger */}
         <button
           onClick={onOpenLedger}
@@ -231,35 +195,6 @@ export const NavigationHeader: React.FC<NavigationHeaderProps> = ({
       {mobileMenuOpen && (
         <div className="md:hidden fixed inset-x-0 top-16 bg-white border-b border-[#E2E8F0] shadow-xl p-4 z-50 animate-in slide-in-from-top-2">
           <div className="space-y-1.5">
-            {onSwitchStudentMode && (
-              <div className="p-2 rounded-xl bg-slate-100 border border-slate-200 mb-2 flex items-center justify-between">
-                <span className="text-[10px] font-mono text-slate-500 uppercase font-bold">Mode:</span>
-                <div className="flex gap-1">
-                  <button
-                    onClick={() => {
-                      onSwitchStudentMode('fresh');
-                      setMobileMenuOpen(false);
-                    }}
-                    className={`px-2 py-1 rounded text-[10px] font-mono font-bold ${
-                      studentMode === 'fresh' ? 'bg-emerald-600 text-white' : 'bg-white text-slate-700'
-                    }`}
-                  >
-                    Clean Slate
-                  </button>
-                  <button
-                    onClick={() => {
-                      onSwitchStudentMode('demo');
-                      setMobileMenuOpen(false);
-                    }}
-                    className={`px-2 py-1 rounded text-[10px] font-mono font-bold ${
-                      studentMode === 'demo' ? 'bg-[#111827] text-white' : 'bg-white text-slate-700'
-                    }`}
-                  >
-                    Demo Showcase
-                  </button>
-                </div>
-              </div>
-            )}
             <div className="text-[10px] font-mono uppercase text-[#64748B] px-3 pb-1">
               Portfolio Views
             </div>

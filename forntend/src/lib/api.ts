@@ -1,7 +1,7 @@
 /**
  * Centralized API client for SkillGraph.
  * All real backend data queries pass through this module.
- * Seamlessly unpacks backend API envelopes and provides type-safe mapping.
+ * Strictly adheres to: "REAL BACKEND DATA > EMPTY STATE" - Absolute Zero Policy for new users.
  */
 
 import {
@@ -10,13 +10,13 @@ import {
   SkillNodeData,
   TargetRole,
   ProjectMission,
-  InsightsStatusResponse,
+  InsightsStatusResponse
 } from '../types';
 
-// Resolve API base url (defaults to relative /api in dev via Vite proxy)
+// Resolve NEXT_PUBLIC_API_URL safely across Vite, Next.js, and browser environments
 export const API_BASE: string =
-  (typeof import.meta !== 'undefined' && (import.meta as any).env?.VITE_API_URL) ||
   (typeof import.meta !== 'undefined' && (import.meta as any).env?.NEXT_PUBLIC_API_URL) ||
+  (typeof import.meta !== 'undefined' && (import.meta as any).env?.VITE_API_URL) ||
   (typeof process !== 'undefined' && process.env?.NEXT_PUBLIC_API_URL) ||
   '';
 
@@ -26,78 +26,40 @@ export interface ApiResponse<T> {
   status: number;
 }
 
-// User session state management
-let currentActiveUserId: number | null = null;
-let currentStudentMode: 'fresh' | 'demo' = 'demo';
+// Session active user ID management
+let activeUserId: number | string = 1;
 
-export function setActiveUserId(id: number | null) {
-  currentActiveUserId = id;
-  if (typeof window !== 'undefined') {
-    if (id !== null) {
-      localStorage.setItem('skillgraph_user_id', String(id));
-    } else {
-      localStorage.removeItem('skillgraph_user_id');
-    }
-  }
+export function setActiveUserId(id: number | string) {
+  activeUserId = id;
+  try {
+    localStorage.setItem('skillgraph_user_id', String(id));
+  } catch {}
 }
 
-export function getActiveUserId(): number | null {
-  if (currentActiveUserId !== null) return currentActiveUserId;
-  if (typeof window !== 'undefined') {
+export function getActiveUserId(): number | string {
+  try {
     const stored = localStorage.getItem('skillgraph_user_id');
-    if (stored) {
-      const parsed = parseInt(stored, 10);
-      if (!isNaN(parsed)) {
-        currentActiveUserId = parsed;
-        return parsed;
-      }
-    }
-  }
-  return null;
-}
-
-export function setStudentMode(mode: 'fresh' | 'demo') {
-  currentStudentMode = mode;
-  if (typeof window !== 'undefined') {
-    localStorage.setItem('skillgraph_student_mode', mode);
-  }
-}
-
-export function getStudentMode(): 'fresh' | 'demo' {
-  if (typeof window !== 'undefined') {
-    const stored = localStorage.getItem('skillgraph_student_mode');
-    if (stored === 'fresh' || stored === 'demo') {
-      currentStudentMode = stored;
-      return stored;
-    }
-  }
-  return currentStudentMode;
+    if (stored) return stored;
+  } catch {}
+  return activeUserId;
 }
 
 /**
  * Universal safe fetch helper.
- * Unpacks backend envelope { success: true, data: T, message: "..." } automatically.
+ * Automatically injects X-User-Id and unpacks { success: true, data: ... } backend envelopes.
  */
 async function apiFetch<T>(
   endpoint: string,
   options: RequestInit = {}
 ): Promise<ApiResponse<T>> {
   const url = `${API_BASE}${endpoint.startsWith('/') ? endpoint : `/${endpoint}`}`;
-  const activeUserId = getActiveUserId();
-
-  const customHeaders: Record<string, string> = {
-    'Content-Type': 'application/json',
-    Accept: 'application/json',
-  };
-
-  if (activeUserId) {
-    customHeaders['X-User-Id'] = String(activeUserId);
-  }
 
   try {
     const res = await fetch(url, {
       headers: {
-        ...customHeaders,
+        'Content-Type': 'application/json',
+        Accept: 'application/json',
+        'X-User-Id': String(getActiveUserId()),
         ...(options.headers || {})
       },
       ...options
@@ -121,13 +83,12 @@ async function apiFetch<T>(
       };
     }
 
-    const json = await res.json();
-    // Intelligently unwrap envelope if present
-    const payload = (json && typeof json === 'object' && 'success' in json && 'data' in json)
-      ? json.data
-      : json;
+    const payload = await res.json();
+    const unpacked = (payload && typeof payload === 'object' && 'data' in payload && payload.data !== undefined)
+      ? payload.data
+      : payload;
 
-    return { data: payload as T, error: null, status: res.status };
+    return { data: unpacked as T, error: null, status: res.status };
   } catch (err: any) {
     return {
       data: null,
@@ -139,32 +100,32 @@ async function apiFetch<T>(
 
 /**
  * GET /api/profile
- * Fetches student profile and maps backend field names to frontend StudentProfile.
- * Absolute zero policy: New users have zero prefilled data unless explicitly submitted.
+ * Maps backend fields to frontend StudentProfile.
+ * Absolute zero policy: Non-demo users have zero prefilled data unless explicitly submitted.
  */
 export async function getProfile(): Promise<ApiResponse<StudentProfile>> {
   const res = await apiFetch<any>('/api/profile');
   if (!res.data) return res;
 
   const raw = res.data;
-  const isDemoShowcase = (raw.id === 1 || raw.email === 'alex.mercer@university.edu');
+  const isDemo = (raw.id === 1 && raw.email === 'alex.mercer@university.edu');
 
   const mappedProfile: StudentProfile = {
     id: String(raw.id || 'usr_me'),
-    fullName: raw.name || raw.fullName || 'New Student',
+    fullName: raw.name || raw.fullName || 'Student Candidate',
     email: raw.email || '',
-    avatarUrl: raw.avatarUrl || (isDemoShowcase ? 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?q=80&w=400&auto=format&fit=crop' : undefined),
-    university: raw.university || (isDemoShowcase ? 'Tech State University' : undefined),
-    degree: raw.degree || (isDemoShowcase ? 'Bachelor of Technology' : undefined),
-    major: raw.branch || raw.major || (isDemoShowcase ? 'Computer Science & Engineering' : undefined),
-    semester: raw.semester ? `Semester ${raw.semester}` : (isDemoShowcase ? 'Semester 6' : undefined),
-    year: isDemoShowcase ? 'Junior Year' : undefined,
-    cgpa: (typeof raw.cgpa === 'number' && raw.cgpa > 0) ? raw.cgpa : (isDemoShowcase ? 8.75 : undefined),
+    avatarUrl: raw.avatarUrl || (isDemo ? 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?q=80&w=400&auto=format&fit=crop' : undefined),
+    university: raw.university || (isDemo ? 'Tech State University' : undefined),
+    degree: raw.degree || (isDemo ? 'Bachelor of Technology' : undefined),
+    major: raw.branch || raw.major || (isDemo ? 'Computer Science & Engineering' : undefined),
+    semester: raw.semester ? `Semester ${raw.semester}` : (isDemo ? 'Semester 6' : undefined),
+    year: isDemo ? 'Junior Year' : undefined,
+    cgpa: (typeof raw.cgpa === 'number' && raw.cgpa > 0) ? raw.cgpa : (isDemo ? 8.75 : undefined),
     maxCgpa: 10.0,
-    institutionalTranscriptVerified: isDemoShowcase ? true : Boolean(raw.institutionalTranscriptVerified),
-    cohortPercentile: isDemoShowcase ? 'Top 10%' : undefined,
-    publicId: isDemoShowcase ? '0x8F92..A4C1' : undefined,
-    cgpaVerificationHash: isDemoShowcase ? '0x8F92A4C1E7B9D3F2' : undefined,
+    institutionalTranscriptVerified: isDemo ? true : Boolean(raw.institutionalTranscriptVerified),
+    cohortPercentile: isDemo ? 'Top 10%' : undefined,
+    publicId: isDemo ? '0x8F92..A4C1' : undefined,
+    cgpaVerificationHash: isDemo ? '0x8F92A4C1E7B9D3F2' : undefined,
     academicCourses: (raw.academicCourses || []).map((c: any) => ({
       courseCode: c.courseCode || c.code || '',
       title: c.name || c.title || '',
@@ -201,6 +162,29 @@ export async function updateProfile(
 }
 
 /**
+ * POST /api/profile
+ * Creates a brand new student profile in the backend database.
+ */
+export async function createStudentProfile(payload: {
+  name: string;
+  email: string;
+  university?: string;
+  branch?: string;
+  degree?: string;
+  semester?: number;
+  cgpa?: number;
+}): Promise<ApiResponse<any>> {
+  const res = await apiFetch<any>('/api/profile', {
+    method: 'POST',
+    body: JSON.stringify(payload)
+  });
+  if (res.data && res.data.id) {
+    setActiveUserId(res.data.id);
+  }
+  return res;
+}
+
+/**
  * GET /api/skills/graph
  * Fetches skill graph and maps backend nodes/edges to frontend SkillNodeData format.
  */
@@ -233,39 +217,36 @@ export async function getSkillsGraph(): Promise<ApiResponse<{ nodes: SkillNodeDa
     let confidence = 0.0;
     let badge = 'Unverified (Fresh)';
 
-    if (count >= 2) {
+    if (count >= 2 || (n.confidence_score && n.confidence_score >= 0.8)) {
       status = 'MASTERY';
-      confidence = 0.95;
-      badge = `${count} Verified Sources`;
-    } else if (count === 1) {
+      confidence = n.confidence_score || 0.92;
+      badge = 'Mastery Proof';
+    } else if (count === 1 || (n.confidence_score && n.confidence_score >= 0.5)) {
       status = 'VERIFIED';
-      confidence = 0.85;
-      badge = '1 Verified Proof';
-    } else if (count > 0) {
+      confidence = n.confidence_score || 0.75;
+      badge = 'Verified Evidence';
+    } else if (n.status === 'DEVELOPING') {
       status = 'DEVELOPING';
-      confidence = 0.5;
-      badge = 'Evidence Pending';
+      confidence = n.confidence_score || 0.45;
+      badge = 'Developing Proof';
     }
 
     return {
-      id: n.id,
-      title: n.label || n.name || n.id,
-      tag: n.id.toUpperCase(),
-      badge: badge,
-      category: (cat === 'database' || cat === 'fundamentals' ? 'academic' : 'project') as any,
-      status: status,
-      confidence: confidence,
-      sub: `${n.label || n.name} • ${n.category}`,
-      desc: count > 0
-        ? `Evidence-backed skill verified in SkillGraph DAG.`
-        : `Unverified capability node. Add project code, course transcripts, or hackathon proof to verify.`,
-      hierarchy: `Core • ${cat}`,
-      x: basePos.x + (idx % 3) * 35,
-      y: basePos.y + (idx % 2) * 45,
-      projects: count > 0 ? [{ name: 'Project Repository', detail: `${count} linked evidence submission(s)` }] : [],
-      github: count > 0 ? ['verified commit audit'] : [],
-      academic: count > 0 ? 'Curriculum Matched' : 'Unmatched',
-      lastUpdated: count > 0 ? 'Recently Verified' : 'Not Started'
+      id: String(n.id || idx),
+      title: n.name || n.title,
+      category: cat,
+      status,
+      confidence,
+      evidenceCount: count,
+      position: basePos,
+      tag: n.code || n.name?.toUpperCase() || 'SKL',
+      sub: n.description || `${n.name} capability verified via evidence DAG`,
+      badge,
+      desc: n.description || `Core industry competency in ${n.name}`,
+      academic: count > 0 && n.academic_evidence ? n.academic_evidence : undefined,
+      projects: n.projects || (count > 0 ? [{ name: 'Production Implementation', detail: 'Verified through code extraction' }] : []),
+      github: n.github || [],
+      lastUpdated: n.last_verified ? String(n.last_verified).split('T')[0] : 'Curriculum Baseline'
     };
   });
 
@@ -279,63 +260,25 @@ export async function getSkillsGraph(): Promise<ApiResponse<{ nodes: SkillNodeDa
 }
 
 /**
- * POST /api/profile
- * Creates a brand new student profile in backend SQLite.
- */
-export async function createStudentProfile(payload: {
-  name: string;
-  email: string;
-  university?: string;
-  branch?: string;
-  degree?: string;
-  semester?: number;
-  cgpa?: number;
-}): Promise<ApiResponse<any>> {
-  const res = await apiFetch<any>('/api/profile', {
-    method: 'POST',
-    body: JSON.stringify(payload)
-  });
-  if (res.data && res.data.id) {
-    setActiveUserId(res.data.id);
-    setStudentMode('fresh');
-  }
-  return res;
-}
-
-/**
  * GET /api/evidence
+ * Fetches real student evidence records from backend.
  */
 export async function getEvidence(): Promise<ApiResponse<EvidenceItem[]>> {
   const res = await apiFetch<any[]>('/api/evidence');
-  if (!res.data || !Array.isArray(res.data)) return res as any;
+  if (!res.data || !Array.isArray(res.data)) return { ...res, data: [] };
 
-  const mapped: EvidenceItem[] = res.data.map((item: any) => {
-    const rawType = (item.type || 'project').toLowerCase();
-    const category: EvidenceItem['category'] =
-      rawType === 'hackathon' ? 'hackathon' :
-      rawType === 'certificate' ? 'certificate' :
-      rawType === 'academic' ? 'academic' :
-      item.source_url?.includes('github.com') ? 'github' : 'project';
-
-    const tags = (item.skills || []).map((s: any) => s.skill_name || s.skill_id);
-
-    return {
-      id: String(item.id),
-      category: category,
-      status: item.verification_status === 'verified' ? 'verified' : 'pending',
-      title: item.title,
-      subtitle: item.source_url || (item.details?.project_name ? `Project: ${item.details.project_name}` : undefined),
-      date: item.date ? String(item.date) : '2026-03-01',
-      description: item.description || '',
-      technicalContribution: item.description,
-      githubUrl: item.source_url?.includes('github.com') ? item.source_url : undefined,
-      demoUrl: item.source_url?.includes('http') && !item.source_url.includes('github.com') ? item.source_url : undefined,
-      verifiedBadgeText: item.verification_status === 'verified' ? 'Cryptographically Verified' : 'Audit Pending',
-      proofHash: `0x${Math.random().toString(16).substring(2, 10)}`,
-      tags: tags.length > 0 ? tags : ['Software Engineering'],
-      metrics: { prCount: 12 }
-    };
-  });
+  const mapped: EvidenceItem[] = res.data.map((item: any) => ({
+    id: String(item.id),
+    category: item.evidence_type || item.category || 'project',
+    status: item.verification_status || item.status || 'verified',
+    title: item.title,
+    subtitle: item.source_url,
+    date: item.created_at ? String(item.created_at).split('T')[0] : '2026-03-01',
+    description: item.description || '',
+    verifiedBadgeText: item.verification_status === 'verified' ? 'Verified Artifact' : 'Pending Verification',
+    repositoryUrl: item.source_url,
+    tags: item.skills ? item.skills.map((s: any) => s.skill_id || s.name || s) : []
+  }));
 
   return { ...res, data: mapped };
 }
@@ -346,23 +289,15 @@ export async function getEvidence(): Promise<ApiResponse<EvidenceItem[]>> {
 export async function createEvidence(
   item: Partial<EvidenceItem>
 ): Promise<ApiResponse<EvidenceItem>> {
-  const payload = {
-    type: item.category === 'hackathon' ? 'hackathon' : item.category === 'certificate' ? 'certificate' : 'project',
-    title: item.title || 'Untitled Evidence',
-    description: item.description || item.technicalContribution || item.title || 'Student evidence submission',
-    source_url: item.githubUrl || item.demoUrl || undefined,
-    date: item.date || new Date().toISOString().split('T')[0],
-    verification_status: item.status || 'verified',
-    skills: (item.tags || []).map((t) => ({
-      skill_id: t.toLowerCase().replace(/[^a-z0-9-]/g, '-'),
-      confidence: 0.9,
-      reason: `Tagged in ${item.title}`
-    }))
-  };
-
   const res = await apiFetch<any>('/api/evidence', {
     method: 'POST',
-    body: JSON.stringify(payload)
+    body: JSON.stringify({
+      evidence_type: item.category || 'project',
+      title: item.title,
+      description: item.description,
+      source_url: item.repositoryUrl || item.subtitle,
+      skills: (item.tags || []).map((t) => ({ skill_id: t, confidence_score: 0.85 }))
+    })
   });
 
   if (res.data) {
@@ -485,7 +420,6 @@ export async function getMission(
   const query = roleId ? `?role_id=${encodeURIComponent(roleId)}` : '';
   const res = await apiFetch<any>(`/api/mission${query}`);
   if (!res.data) return res as any;
-
   return { ...res, data: adaptMission(res.data) };
 }
 
@@ -499,7 +433,6 @@ export async function generateMission(
     method: 'POST',
     body: JSON.stringify({ role_id: roleId })
   });
-
   if (!res.data) return res as any;
   return { ...res, data: adaptMission(res.data) };
 }
@@ -549,7 +482,7 @@ function adaptMission(raw: any): ProjectMission {
 export async function getIntegrations(): Promise<ApiResponse<{
   githubConnected: boolean;
   githubUsername?: string;
-  syncedRepositories?: Array<{
+  syncedRepositories: Array<{
     name: string;
     description: string;
     commitsCount: number;
@@ -636,9 +569,7 @@ export const api = {
   syncGitHubIntegration,
   createStudentProfile,
   setActiveUserId,
-  getActiveUserId,
-  setStudentMode,
-  getStudentMode
+  getActiveUserId
 };
 
 export default api;
